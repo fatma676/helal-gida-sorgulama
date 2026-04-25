@@ -6,10 +6,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Supabase bağlantısını kuruyoruz
-  await Supabase.initialize(
-    url: 'https://your-project-id.supabase.co', 
-    anonKey: 'your-anon-key-here',
-  );
+  // Not: Gerçek projede bu değerleri environment variables veya .env dosyasından alınız
+  try {
+    await Supabase.initialize(
+      url: 'https://your-project-id.supabase.co', 
+      anonKey: 'your-anon-key-here',
+    );
+  } catch (e) {
+    print('Supabase initialization error: $e');
+  }
 
   runApp(const MyApp());
 }
