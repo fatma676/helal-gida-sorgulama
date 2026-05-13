@@ -21,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       if (_isLogin) {
+        // --- GİRİŞ YAPMA MANTIĞI ---
         final response = await Supabase.instance.client.auth.signInWithPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
@@ -51,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
       } else {
+        // --- KAYIT OLMA MANTIĞI (DÜZELTİLEN KISIM) ---
         final response = await Supabase.instance.client.auth.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
@@ -58,23 +60,51 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (response.user != null) {
           await Supabase.instance.client.from('kullanici').insert({
-            'ad': _adController.text.trim(),
-            'soyad': _soyadController.text.trim(),
-            'email': _emailController.text.trim(),
+            'kullaniciid': response.user!.id, // Auth ID'si
+            'adsoyad': "${_adController.text.trim()} ${_soyadController.text.trim()}", // Ad ve Soyadı birleştirdik
+            'eposta': _emailController.text.trim(),
+            'sifre': _passwordController.text.trim(), 
             'rol': 'user',
           });
 
+          await Supabase.instance.client.from('logs').insert({
+      'islem': 'Yeni Kayıt Oluşturuldu',
+      'kullanici_mail': _emailController.text.trim(),
+    });
+    
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Kayıt başarılı! Şimdi giriş yapabilirsiniz.")),
+              const SnackBar(
+                content: Text("Kayıt başarılı! Şimdi giriş yapabilirsiniz."),
+                backgroundColor: Colors.green,
+              ),
             );
+            // Kayıt sonrası kullanıcıyı giriş moduna geri döndür
             setState(() => _isLogin = true);
           }
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Hata: $e")));
+        String mesaj = "Bir hata oluştu, lütfen tekrar deneyin.";
+
+        // Teknik hataları kullanıcı dostu Türkçeye çeviriyoruz
+        if (e.toString().contains("user_already_exists")) {
+          mesaj = "Bu e-posta adresi zaten kayıtlı. Giriş yapmayı deneyin.";
+        } else if (e.toString().contains("Invalid login credentials")) {
+          mesaj = "E-posta veya şifre hatalı. Lütfen kontrol edin.";
+        }else {
+          mesaj = "Hata: $e"; // Diğer beklenmedik hatalar için
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(mesaj),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating, // Mesajın altta yüzmesi için
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -113,10 +143,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         "Helal Gıda Sorgulama",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF2E7D32),
-                          letterSpacing: 2,
+                          letterSpacing: 1.5,
                         ),
                       ),
                     ],
@@ -133,10 +163,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   _customTextField(_passwordController, "Şifre", Icons.lock_outline, isPassword: true),
                   const SizedBox(height: 35),
                   _isLoading
-                      ? const CircularProgressIndicator()
+                      ? const CircularProgressIndicator(color: Color(0xFF2E7D32))
                       : ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1DB954),
+                            backgroundColor: const Color(0xFF2E7D32),
                             foregroundColor: Colors.white,
                             minimumSize: const Size(double.infinity, 55),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -168,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _customTextField(TextEditingController controller, String hint, IconData icon, {bool isPassword = false}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),

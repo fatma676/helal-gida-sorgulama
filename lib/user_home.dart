@@ -10,17 +10,138 @@ class UserHomePage extends StatefulWidget {
 
 class _UserHomePageState extends State<UserHomePage> {
   int _seciliIndeks = 0;
+  late final Future<Map<String, dynamic>?> _profilBilgileri;
 
-  final List<Widget> _sayfalar = [
+  @override
+  void initState() {
+    super.initState();
+    _profilBilgileri = _fetchProfilBilgileri();
+  }
+
+  Future<Map<String, dynamic>?> _fetchProfilBilgileri() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || user.email == null) return null;
+
+    return await Supabase.instance.client
+        .from('kullanici')
+        .select('adsoyad')
+        .eq('eposta', user.email!)
+        .maybeSingle();
+  }
+
+  // Çıkış yapma ve loglama fonksiyonu
+  Future<void> _handleLogout() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+
+      if (user != null) {
+        final String email = user.email!;
+
+        // 1. Logs tablosuna çıkış yapıldı kaydı ekle
+        await supabase.from('logs').insert({
+          'islem': 'Çıkış yapıldı',
+          'kullanici_mail': email,
+        });
+
+        // 2. Supabase oturumunu sonlandır
+        await supabase.auth.signOut();
+
+        if (!mounted) return;
+
+        // 3. Login ekranına dön ve geçmişi temizle
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Çıkış yapılırken hata oluştu: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Sayfalar listesini burada tanımlıyoruz (Profil sayfasına butonu ekledik)
+  List<Widget> get _sayfalar => [
     const KategorilerSayfasi(),
-    const Center(child: Text("Favorilerim", style: TextStyle(fontSize: 18, color: Colors.grey))),
-    const Center(child: Text("Profilim", style: TextStyle(fontSize: 18, color: Colors.grey))),
+    const Center(
+      child: Text(
+        "Favorilerim",
+        style: TextStyle(fontSize: 18, color: Colors.grey),
+      ),
+    ),
+    _profilSayfasi(),
   ];
+
+  // Profil sekmesi içeriği
+  Widget _profilSayfasi() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: FutureBuilder<Map<String, dynamic>?>(
+          future: _profilBilgileri,
+          builder: (context, snapshot) {
+            String displayName = "Ad Soyad bulunamadı";
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              displayName = "Yükleniyor...";
+            } else if (snapshot.hasData &&
+                snapshot.data != null &&
+                snapshot.data!['adsoyad'] != null) {
+              displayName = snapshot.data!['adsoyad'] as String;
+            }
+
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.account_circle,
+                  size: 100,
+                  color: Color(0xFF2E7D32),
+                ),
+                const SizedBox(height: 10),
+                Text(displayName, style: const TextStyle(fontSize: 16)),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: _handleLogout,
+                  icon: const Icon(Icons.logout),
+                  label: const Text("Çıkış Yap"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade700,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(200, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF1F8F1),
+      appBar: _seciliIndeks == 0
+          ? null
+          : AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              actions: [
+                IconButton(
+                  onPressed: _handleLogout,
+                  icon: const Icon(Icons.logout, color: Color(0xFF2E7D32)),
+                  tooltip: "Çıkış Yap",
+                ),
+              ],
+            ),
       body: Stack(
         children: [
           Positioned.fill(
@@ -40,7 +161,10 @@ class _UserHomePageState extends State<UserHomePage> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Ana Sayfa'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favoriler'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favoriler',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
@@ -86,7 +210,11 @@ class KategorilerSayfasi extends StatelessWidget {
                 const SizedBox(height: 6),
                 const Text(
                   "Helal Gıda Sorgulama",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2E7D32),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Padding(
@@ -98,14 +226,21 @@ class KategorilerSayfasi extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(30),
-                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black12, blurRadius: 8),
+                            ],
                           ),
                           child: const TextField(
                             decoration: InputDecoration(
                               hintText: "Ürün adı veya barkod yazın...",
-                              prefixIcon: Icon(Icons.search, color: Colors.green),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: Colors.green,
+                              ),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(vertical: 15),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 15,
+                              ),
                             ),
                           ),
                         ),
@@ -114,12 +249,17 @@ class KategorilerSayfasi extends StatelessWidget {
                       ElevatedButton.icon(
                         onPressed: () {},
                         icon: const Icon(Icons.qr_code_scanner),
-                        label: const Text("Scan Barkod"),
+                        label: const Text("Scan"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2E7D32),
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -129,7 +269,13 @@ class KategorilerSayfasi extends StatelessWidget {
                   padding: EdgeInsets.all(20.0),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text("Kategoriler", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      "Kategoriler",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -145,44 +291,52 @@ class KategorilerSayfasi extends StatelessWidget {
               crossAxisSpacing: 15,
               childAspectRatio: 0.9,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                // --- BURASI GÜNCELLENDİ: InkWell ve Navigator eklendi ---
-                return InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => KategoriUrunleriSayfasi(
-                          kategoriAdi: kategoriler[index]['ad'],
+            delegate: SliverChildBuilderDelegate((context, index) {
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => KategoriUrunleriSayfasi(
+                        kategoriAdi: kategoriler[index]['ad'],
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        kategoriler[index]['ikon'],
+                        color: const Color(0xFF2E7D32),
+                        size: 35,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        kategoriler[index]['ad'],
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)],
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(kategoriler[index]['ikon'], color: const Color(0xFF2E7D32), size: 35),
-                        const SizedBox(height: 8),
-                        Text(
-                          kategoriler[index]['ad'],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                );
-              },
-              childCount: kategoriler.length,
-            ),
+                ),
+              );
+            }, childCount: kategoriler.length),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 30)),
@@ -191,10 +345,8 @@ class KategorilerSayfasi extends StatelessWidget {
   }
 }
 
-// --- ŞİMDİLİK BOŞ GELECEK ÜRÜN LİSTESİ SAYFASI ---
 class KategoriUrunleriSayfasi extends StatelessWidget {
   final String kategoriAdi;
-
   const KategoriUrunleriSayfasi({super.key, required this.kategoriAdi});
 
   @override
@@ -210,19 +362,17 @@ class KategoriUrunleriSayfasi extends StatelessWidget {
         ),
         title: Text(
           kategoriAdi,
-          style: const TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Color(0xFF2E7D32),
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-        ),
-      ),
+      body: const Center(child: Text("Ürünler yakında eklenecek...")),
     );
   }
 }
 
-// Senin özel Hilal Painter'ın 
 class CrescentPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -234,7 +384,8 @@ class CrescentPainter extends CustomPainter {
     canvas.drawCircle(outerCenter, outerRadius, paint);
 
     final clearPaint = Paint()..blendMode = BlendMode.clear;
-    final innerCenter = outerCenter + Offset(size.width * 0.18, -size.height * 0.12);
+    final innerCenter =
+        outerCenter + Offset(size.width * 0.18, -size.height * 0.12);
     final innerRadius = outerRadius * 0.8;
     canvas.drawCircle(innerCenter, innerRadius, clearPaint);
     canvas.restore();
