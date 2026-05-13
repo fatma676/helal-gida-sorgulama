@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserHomePage extends StatefulWidget {
@@ -29,7 +29,6 @@ class _UserHomePageState extends State<UserHomePage> {
         .maybeSingle();
   }
 
-  // Çıkış yapma ve loglama fonksiyonu
   Future<void> _handleLogout() async {
     try {
       final supabase = Supabase.instance.client;
@@ -37,19 +36,12 @@ class _UserHomePageState extends State<UserHomePage> {
 
       if (user != null) {
         final String email = user.email!;
-
-        // 1. Logs tablosuna çıkış yapıldı kaydı ekle
         await supabase.from('logs').insert({
           'islem': 'Çıkış yapıldı',
           'kullanici_mail': email,
         });
-
-        // 2. Supabase oturumunu sonlandır
         await supabase.auth.signOut();
-
         if (!mounted) return;
-
-        // 3. Login ekranına dön ve geçmişi temizle
         Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
       }
     } catch (e) {
@@ -64,63 +56,115 @@ class _UserHomePageState extends State<UserHomePage> {
     }
   }
 
-  // Sayfalar listesini burada tanımlıyoruz (Profil sayfasına butonu ekledik)
   List<Widget> get _sayfalar => [
-    const KategorilerSayfasi(),
-    const Center(
-      child: Text(
-        "Favorilerim",
-        style: TextStyle(fontSize: 18, color: Colors.grey),
-      ),
-    ),
-    _profilSayfasi(),
-  ];
+        const KategorilerSayfasi(),
+        const FavorilerSayfasi(),
+        _profilSayfasi(),
+      ];
 
-  // Profil sekmesi içeriği
   Widget _profilSayfasi() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: FutureBuilder<Map<String, dynamic>?>(
-          future: _profilBilgileri,
-          builder: (context, snapshot) {
-            String displayName = "Ad Soyad bulunamadı";
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              displayName = "Yükleniyor...";
-            } else if (snapshot.hasData &&
-                snapshot.data != null &&
-                snapshot.data!['adsoyad'] != null) {
-              displayName = snapshot.data!['adsoyad'] as String;
-            }
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _profilBilgileri,
+      builder: (context, snapshot) {
+        String displayName = "Ad Soyad bulunamadı";
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          displayName = "Yükleniyor...";
+        } else if (snapshot.hasData &&
+            snapshot.data != null &&
+            snapshot.data!['adsoyad'] != null) {
+          displayName = snapshot.data!['adsoyad'] as String;
+        }
 
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.account_circle,
-                  size: 100,
-                  color: Color(0xFF2E7D32),
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.only(top: 20, bottom: 12),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2E7D32),
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                const SizedBox(height: 10),
-                Text(displayName, style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 30),
-                ElevatedButton.icon(
-                  onPressed: _handleLogout,
-                  icon: const Icon(Icons.logout),
-                  label: const Text("Çıkış Yap"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade700,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(200, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  children: [
+                    const Text(
+                      "Hesabım",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.person,
+                          size: 60, color: Colors.green.shade800),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(15),
+                      margin: const EdgeInsets.symmetric(horizontal: 30),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black12, blurRadius: 10)
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(displayName,
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          const Text("Kullanıcı",
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(20),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _profilMenuTile(Icons.person_outline, "Hesap Ayarları"),
+                  _profilMenuTile(Icons.security, "Gizlilik Politikası"),
+                  _profilMenuTile(Icons.info_outline, "Hakkımızda"),
+                  const SizedBox(height: 20),
+                  ListTile(
+                    onTap: _handleLogout,
+                    leading: const Icon(Icons.logout, color: Colors.red),
+                    title: const Text("Çıkış Yap",
+                        style: TextStyle(
+                            color: Colors.red, fontWeight: FontWeight.bold)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
+                    tileColor: Colors.red.withOpacity(0.05),
+                  ),
+                ]),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _profilMenuTile(IconData icon, String title) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: ListTile(
+        leading: Icon(icon, color: const Color(0xFF2E7D32)),
+        title: Text(title),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {},
       ),
     );
   }
@@ -147,7 +191,8 @@ class _UserHomePageState extends State<UserHomePage> {
           Positioned.fill(
             child: Opacity(
               opacity: 0.05,
-              child: Icon(Icons.eco, size: 400, color: Colors.green.shade900),
+              child:
+                  Icon(Icons.eco, size: 400, color: Colors.green.shade900),
             ),
           ),
           _sayfalar[_seciliIndeks],
@@ -160,17 +205,21 @@ class _UserHomePageState extends State<UserHomePage> {
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Ana Sayfa'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favoriler',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+              icon: Icon(Icons.home), label: 'Ana Sayfa'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.favorite), label: 'Favorilerim'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person), label: 'Hesabım'),
         ],
       ),
     );
   }
 }
+
+// ──────────────────────────────────────────────
+// KATEGORİLER SAYFASI
+// ──────────────────────────────────────────────
 
 class KategorilerSayfasi extends StatelessWidget {
   const KategorilerSayfasi({super.key});
@@ -233,14 +282,11 @@ class KategorilerSayfasi extends StatelessWidget {
                           child: const TextField(
                             decoration: InputDecoration(
                               hintText: "Ürün adı veya barkod yazın...",
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: Colors.green,
-                              ),
+                              prefixIcon:
+                                  Icon(Icons.search, color: Colors.green),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
+                              contentPadding:
+                                  EdgeInsets.symmetric(vertical: 15),
                             ),
                           ),
                         ),
@@ -249,7 +295,7 @@ class KategorilerSayfasi extends StatelessWidget {
                       ElevatedButton.icon(
                         onPressed: () {},
                         icon: const Icon(Icons.qr_code_scanner),
-                        label: const Text("Scan"),
+                        label: const Text("Okut"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2E7D32),
                           foregroundColor: Colors.white,
@@ -257,9 +303,7 @@ class KategorilerSayfasi extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 15,
-                            vertical: 12,
-                          ),
+                              horizontal: 15, vertical: 12),
                         ),
                       ),
                     ],
@@ -272,9 +316,7 @@ class KategorilerSayfasi extends StatelessWidget {
                     child: Text(
                       "Kategoriler",
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -291,52 +333,53 @@ class KategorilerSayfasi extends StatelessWidget {
               crossAxisSpacing: 15,
               childAspectRatio: 0.9,
             ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              return InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => KategoriUrunleriSayfasi(
-                        kategoriAdi: kategoriler[index]['ad'],
-                      ),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        kategoriler[index]['ikon'],
-                        color: const Color(0xFF2E7D32),
-                        size: 35,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        kategoriler[index]['ad'],
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                return InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => KategoriUrunleriSayfasi(
+                          kategoriAdi: kategoriler[index]['ad'],
                         ),
                       ),
-                    ],
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          kategoriler[index]['ikon'],
+                          color: const Color(0xFF2E7D32),
+                          size: 35,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          kategoriler[index]['ad'],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }, childCount: kategoriler.length),
+                );
+              },
+              childCount: kategoriler.length,
+            ),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 30)),
@@ -345,9 +388,135 @@ class KategorilerSayfasi extends StatelessWidget {
   }
 }
 
-class KategoriUrunleriSayfasi extends StatelessWidget {
+// ──────────────────────────────────────────────
+// KATEGORİ ÜRÜNLERİ SAYFASI
+// ──────────────────────────────────────────────
+
+class KategoriUrunleriSayfasi extends StatefulWidget {
   final String kategoriAdi;
+
   const KategoriUrunleriSayfasi({super.key, required this.kategoriAdi});
+
+  @override
+  State<KategoriUrunleriSayfasi> createState() =>
+      _KategoriUrunleriSayfasiState();
+}
+
+class _KategoriUrunleriSayfasiState extends State<KategoriUrunleriSayfasi> {
+  bool _yukleniyor = true;
+  List<dynamic> _urunler = [];
+  final List<int> _favoriUrunIdleri = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _urunleriGetir();
+    _favoriListesiniGetir();
+  }
+
+  Future<void> _favoriListesiniGetir() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    final email = user?.email;
+    if (email == null) return;
+
+    try {
+      final favoriData = await Supabase.instance.client
+          .from('favoriler')
+          .select('urunid')
+          .eq('kullanici_mail', email);
+
+      if (favoriData is List) {
+        setState(() {
+          _favoriUrunIdleri.clear();
+          _favoriUrunIdleri.addAll(favoriData
+              .where((item) =>
+                  item is Map<String, dynamic> && item['urunid'] != null)
+              .map<int>((item) => item['urunid'] as int));
+        });
+      }
+    } catch (e) {
+      debugPrint('Favori listesi alınamadı: $e');
+    }
+  }
+
+  Future<void> _favoriToggle(int urunId) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final zatenFavori = _favoriUrunIdleri.contains(urunId);
+
+    try {
+      if (zatenFavori) {
+        await Supabase.instance.client
+            .from('favoriler')
+            .delete()
+            .eq('kullanici_mail', user.email!)
+            .eq('urunid', urunId);
+
+        if (mounted) {
+          setState(() => _favoriUrunIdleri.remove(urunId));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Ürün favorilerden kaldırıldı!"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        await Supabase.instance.client.from('favoriler').insert({
+          'kullanici_mail': user.email,
+          'urunid': urunId,
+        });
+
+        if (mounted) {
+          setState(() => _favoriUrunIdleri.add(urunId));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Ürün favorilere eklendi!"),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("İşlem sırasında hata oluştu: $e"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _urunleriGetir() async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      final kategoriData = await supabase
+          .from('kategori')
+          .select('kategoriid')
+          .eq('kategoriadi', widget.kategoriAdi)
+          .single();
+
+      final int kategoriId = kategoriData['kategoriid'];
+
+      final urunlerData = await supabase
+          .from('urun')
+          .select('*')
+          .eq('kategoriid', kategoriId)
+          .order('urunadi', ascending: true);
+
+      setState(() {
+        _urunler = urunlerData;
+        _yukleniyor = false;
+      });
+    } catch (e) {
+      debugPrint("Hata oluştu: $e");
+      setState(() => _yukleniyor = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -357,21 +526,335 @@ class KategoriUrunleriSayfasi extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF2E7D32)),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: Color(0xFF2E7D32)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          kategoriAdi,
+          widget.kategoriAdi,
           style: const TextStyle(
-            color: Color(0xFF2E7D32),
-            fontWeight: FontWeight.bold,
-          ),
+              color: Color(0xFF2E7D32), fontWeight: FontWeight.bold),
         ),
       ),
-      body: const Center(child: Text("Ürünler yakında eklenecek...")),
+      body: _yukleniyor
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
+          : _urunler.isEmpty
+              ? const Center(
+                  child: Text("Bu kategoride henüz ürün bulunmuyor."))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _urunler.length,
+                  itemBuilder: (context, index) {
+                    final urun = _urunler[index];
+                    final String durum = urun['durum'];
+
+                    Color durumRengi = Colors.grey;
+                    if (durum == 'Helal') durumRengi = Colors.green;
+                    if (durum == 'Şüpheli') durumRengi = Colors.orange;
+                    if (durum == 'Haram') durumRengi = Colors.red;
+
+                    final bool favori =
+                        _favoriUrunIdleri.contains(urun['urunid']);
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20)),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(12),
+                        leading: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: durumRengi.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child:
+                              Icon(Icons.inventory_2, color: durumRengi),
+                        ),
+                        title: Text(
+                          urun['urunadi'],
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Barkod: ${urun['barkod']}"),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: durumRengi,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                durum,
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(
+                            favori
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: favori ? Colors.green : Colors.green,
+                          ),
+                          onPressed: () => _favoriToggle(urun['urunid']),
+                        ),
+                        onTap: () {},
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
+
+// ──────────────────────────────────────────────
+// FAVORİLER SAYFASI — Supabase'den gerçek veri
+// ──────────────────────────────────────────────
+
+class FavorilerSayfasi extends StatefulWidget {
+  const FavorilerSayfasi({super.key});
+
+  @override
+  State<FavorilerSayfasi> createState() => _FavorilerSayfasiState();
+}
+
+class _FavorilerSayfasiState extends State<FavorilerSayfasi> {
+  bool _yukleniyor = true;
+  // Her eleman: { 'urunid', 'urunadi', 'barkod', 'durum' }
+  List<Map<String, dynamic>> _favoriler = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _favorileriGetir();
+  }
+
+  Future<void> _favorileriGetir() async {
+    setState(() => _yukleniyor = true);
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || user.email == null) {
+      setState(() => _yukleniyor = false);
+      return;
+    }
+
+    try {
+      // favoriler tablosundan kullanıcının favori urunid'lerini,
+      // urun tablosuyla join ederek çek.
+      final data = await Supabase.instance.client
+          .from('favoriler')
+          .select('urunid, urun(urunid, urunadi, barkod, durum)')
+          .eq('kullanici_mail', user.email!);
+
+      final List<Map<String, dynamic>> liste = [];
+      for (final row in data as List) {
+        final urun = row['urun'];
+        if (urun != null && urun is Map<String, dynamic>) {
+          liste.add({
+            'urunid': urun['urunid'],
+            'urunadi': urun['urunadi'],
+            'barkod': urun['barkod'],
+            'durum': urun['durum'],
+          });
+        }
+      }
+
+      setState(() {
+        _favoriler = liste;
+        _yukleniyor = false;
+      });
+    } catch (e) {
+      debugPrint('Favoriler getirilemedi: $e');
+      setState(() => _yukleniyor = false);
+    }
+  }
+
+  Future<void> _favoridanKaldir(int urunId) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await Supabase.instance.client
+          .from('favoriler')
+          .delete()
+          .eq('kullanici_mail', user.email!)
+          .eq('urunid', urunId);
+
+      setState(() {
+        _favoriler.removeWhere((u) => u['urunid'] == urunId);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Ürün favorilerden kaldırıldı!"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("İşlem sırasında hata oluştu: $e"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            width: double.infinity,
+            padding:
+                const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2E7D32),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Text(
+              "Favorilerim",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Expanded(
+          child: _yukleniyor
+              ? const Center(
+                  child: CircularProgressIndicator(
+                      color: Color(0xFF2E7D32)))
+              : _favoriler.isEmpty
+                  ? const Center(
+                      child: Text(
+                        "Henüz favori ürününüz yok.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      color: const Color(0xFF2E7D32),
+                      onRefresh: _favorileriGetir,
+                      child: ListView.builder(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _favoriler.length,
+                        itemBuilder: (context, index) {
+                          final urun = _favoriler[index];
+                          final String durum = urun['durum'] ?? '';
+
+                          Color durumRengi = Colors.grey;
+                          if (durum == 'Helal') durumRengi = Colors.green;
+                          if (durum == 'Şüpheli')
+                            durumRengi = Colors.orange;
+                          if (durum == 'Haram') durumRengi = Colors.red;
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 15),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
+                            elevation: 2,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          durumRengi.withOpacity(0.1),
+                                      borderRadius:
+                                          BorderRadius.circular(15),
+                                    ),
+                                    child: Icon(Icons.inventory_2,
+                                        color: durumRengi),
+                                  ),
+                                  const SizedBox(width: 15),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: durumRengi,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            durum,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight:
+                                                    FontWeight.bold),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          urun['urunadi'] ?? '',
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.black87),
+                                        ),
+                                        Text(
+                                          "Barkod: ${urun['barkod'] ?? ''}",
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Kalp ikonu — basınca favoriden kaldır
+                                  IconButton(
+                                    icon: const Icon(Icons.favorite,
+                                        color: Color(0xFF2E7D32),
+                                        size: 30),
+                                    onPressed: () => _favoridanKaldir(
+                                        urun['urunid']),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// YARDIMCI
+// ──────────────────────────────────────────────
 
 class CrescentPainter extends CustomPainter {
   @override
