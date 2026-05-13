@@ -1,6 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ──────────────────────────────────────────────
+// ANA SAYFA
+// ──────────────────────────────────────────────
+
 class UserHomePage extends StatefulWidget {
   const UserHomePage({super.key});
 
@@ -158,8 +162,7 @@ class _UserHomePageState extends State<UserHomePage> {
   Widget _profilMenuTile(IconData icon, String title) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ListTile(
         leading: Icon(icon, color: const Color(0xFF2E7D32)),
         title: Text(title),
@@ -191,8 +194,7 @@ class _UserHomePageState extends State<UserHomePage> {
           Positioned.fill(
             child: Opacity(
               opacity: 0.05,
-              child:
-                  Icon(Icons.eco, size: 400, color: Colors.green.shade900),
+              child: Icon(Icons.eco, size: 400, color: Colors.green.shade900),
             ),
           ),
           _sayfalar[_seciliIndeks],
@@ -205,12 +207,10 @@ class _UserHomePageState extends State<UserHomePage> {
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home), label: 'Ana Sayfa'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Ana Sayfa'),
           BottomNavigationBarItem(
               icon: Icon(Icons.favorite), label: 'Favorilerim'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person), label: 'Hesabım'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Hesabım'),
         ],
       ),
     );
@@ -526,8 +526,7 @@ class _KategoriUrunleriSayfasiState extends State<KategoriUrunleriSayfasi> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: Color(0xFF2E7D32)),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF2E7D32)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -563,6 +562,16 @@ class _KategoriUrunleriSayfasiState extends State<KategoriUrunleriSayfasi> {
                           borderRadius: BorderRadius.circular(20)),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(12),
+                        // Ürüne tıklayınca detay sayfasına git
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  UrunDetaySayfasi(urun: Map<String, dynamic>.from(urun)),
+                            ),
+                          );
+                        },
                         leading: Container(
                           width: 50,
                           height: 50,
@@ -570,13 +579,12 @@ class _KategoriUrunleriSayfasiState extends State<KategoriUrunleriSayfasi> {
                             color: durumRengi.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child:
-                              Icon(Icons.inventory_2, color: durumRengi),
+                          child: Icon(Icons.inventory_2, color: durumRengi),
                         ),
                         title: Text(
                           urun['urunadi'],
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
+                          style:
+                              const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,11 +611,10 @@ class _KategoriUrunleriSayfasiState extends State<KategoriUrunleriSayfasi> {
                             favori
                                 ? Icons.favorite
                                 : Icons.favorite_border,
-                            color: favori ? Colors.green : Colors.green,
+                            color: favori ? Colors.green : Colors.red,
                           ),
                           onPressed: () => _favoriToggle(urun['urunid']),
                         ),
-                        onTap: () {},
                       ),
                     );
                   },
@@ -617,7 +624,161 @@ class _KategoriUrunleriSayfasiState extends State<KategoriUrunleriSayfasi> {
 }
 
 // ──────────────────────────────────────────────
-// FAVORİLER SAYFASI — Supabase'den gerçek veri
+// ÜRÜN DETAY SAYFASI
+// ──────────────────────────────────────────────
+
+class UrunDetaySayfasi extends StatelessWidget {
+  final Map<String, dynamic> urun;
+
+  const UrunDetaySayfasi({super.key, required this.urun});
+
+  @override
+  Widget build(BuildContext context) {
+    final String durum = urun['durum'] ?? 'Bilinmiyor';
+    final String urunAdi = urun['urunadi'] ?? 'İsimsiz Ürün';
+    final String icerik =
+        urun['icerik'] ?? 'İçerik bilgisi girilmemiş.';
+    final String aciklama = urun['aciklama'] ??
+        'Bu ürün için henüz bir analiz açıklaması bulunmamaktadır.';
+
+    Color temaRengi;
+    IconData durumIkonu;
+    if (durum == 'Helal') {
+      temaRengi = Colors.green.shade700;
+      durumIkonu = Icons.check_circle_outline;
+    } else if (durum == 'Haram') {
+      temaRengi = Colors.red.shade700;
+      durumIkonu = Icons.cancel_outlined;
+    } else {
+      temaRengi = Colors.orange.shade700;
+      durumIkonu = Icons.help_outline;
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FBF8),
+      appBar: AppBar(
+        title: Text(urunAdi,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: temaRengi,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Üst Durum Bannerı
+            Container(
+              width: double.infinity,
+              color: temaRengi,
+              padding: const EdgeInsets.only(bottom: 30, left: 20, right: 20),
+              child: Column(
+                children: [
+                  Icon(durumIkonu, size: 80, color: Colors.white),
+                  const SizedBox(height: 10),
+                  Text(
+                    durum.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // İçerik Kartları
+            Transform.translate(
+              offset: const Offset(0, -20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    _bilgiKarti(
+                      baslik: "Ürün İçeriği",
+                      altBaslik: icerik,
+                      ikon: Icons.list_alt,
+                      ikonRenk: Colors.blueGrey,
+                    ),
+                    const SizedBox(height: 15),
+                    _bilgiKarti(
+                      baslik: "Analiz Açıklaması",
+                      altBaslik: aciklama,
+                      ikon: Icons.description_outlined,
+                      ikonRenk: temaRengi,
+                    ),
+                    const SizedBox(height: 15),
+                    _bilgiKarti(
+                      baslik: "Barkod Numarası",
+                      altBaslik: urun['barkod'] ?? "-",
+                      ikon: Icons.qr_code_scanner,
+                      ikonRenk: Colors.black87,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _bilgiKarti({
+    required String baslik,
+    required String altBaslik,
+    required IconData ikon,
+    required Color ikonRenk,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(ikon, color: ikonRenk, size: 24),
+              const SizedBox(width: 10),
+              Text(
+                baslik,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey),
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Divider(),
+          ),
+          Text(
+            altBaslik,
+            style: const TextStyle(
+                fontSize: 15, color: Colors.black87, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// FAVORİLER SAYFASI
 // ──────────────────────────────────────────────
 
 class FavorilerSayfasi extends StatefulWidget {
@@ -629,7 +790,6 @@ class FavorilerSayfasi extends StatefulWidget {
 
 class _FavorilerSayfasiState extends State<FavorilerSayfasi> {
   bool _yukleniyor = true;
-  // Her eleman: { 'urunid', 'urunadi', 'barkod', 'durum' }
   List<Map<String, dynamic>> _favoriler = [];
 
   @override
@@ -648,11 +808,9 @@ class _FavorilerSayfasiState extends State<FavorilerSayfasi> {
     }
 
     try {
-      // favoriler tablosundan kullanıcının favori urunid'lerini,
-      // urun tablosuyla join ederek çek.
       final data = await Supabase.instance.client
           .from('favoriler')
-          .select('urunid, urun(urunid, urunadi, barkod, durum)')
+          .select('urunid, urun(urunid, urunadi, barkod, durum, icerik, aciklama)')
           .eq('kullanici_mail', user.email!);
 
       final List<Map<String, dynamic>> liste = [];
@@ -664,6 +822,8 @@ class _FavorilerSayfasiState extends State<FavorilerSayfasi> {
             'urunadi': urun['urunadi'],
             'barkod': urun['barkod'],
             'durum': urun['durum'],
+            'icerik': urun['icerik'],
+            'aciklama': urun['aciklama'],
           });
         }
       }
@@ -742,8 +902,8 @@ class _FavorilerSayfasiState extends State<FavorilerSayfasi> {
         Expanded(
           child: _yukleniyor
               ? const Center(
-                  child: CircularProgressIndicator(
-                      color: Color(0xFF2E7D32)))
+                  child:
+                      CircularProgressIndicator(color: Color(0xFF2E7D32)))
               : _favoriler.isEmpty
                   ? const Center(
                       child: Text(
@@ -773,73 +933,85 @@ class _FavorilerSayfasiState extends State<FavorilerSayfasi> {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20)),
                             elevation: 2,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color:
-                                          durumRengi.withOpacity(0.1),
-                                      borderRadius:
-                                          BorderRadius.circular(15),
-                                    ),
-                                    child: Icon(Icons.inventory_2,
-                                        color: durumRengi),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              // Favoriler ekranından da detay sayfasına git
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        UrunDetaySayfasi(urun: urun),
                                   ),
-                                  const SizedBox(width: 15),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          padding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal: 10,
-                                                  vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: durumRengi,
-                                            borderRadius:
-                                                BorderRadius.circular(10),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        color: durumRengi.withOpacity(0.1),
+                                        borderRadius:
+                                            BorderRadius.circular(15),
+                                      ),
+                                      child: Icon(Icons.inventory_2,
+                                          color: durumRengi),
+                                    ),
+                                    const SizedBox(width: 15),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: durumRengi,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              durum,
+                                              style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight:
+                                                      FontWeight.bold),
+                                            ),
                                           ),
-                                          child: Text(
-                                            durum,
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            urun['urunadi'] ?? '',
                                             style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight:
-                                                    FontWeight.bold),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                                color: Colors.black87),
                                           ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          urun['urunadi'] ?? '',
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: Colors.black87),
-                                        ),
-                                        Text(
-                                          "Barkod: ${urun['barkod'] ?? ''}",
-                                          style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey),
-                                        ),
-                                      ],
+                                          Text(
+                                            "Barkod: ${urun['barkod'] ?? ''}",
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  // Kalp ikonu — basınca favoriden kaldır
-                                  IconButton(
-                                    icon: const Icon(Icons.favorite,
-                                        color: Color(0xFF2E7D32),
-                                        size: 30),
-                                    onPressed: () => _favoridanKaldir(
-                                        urun['urunid']),
-                                  ),
-                                ],
+                                    // Kalp ikonu — basınca favoriden kaldır
+                                    IconButton(
+                                      icon: const Icon(Icons.favorite,
+                                          color: Color(0xFF2E7D32),
+                                          size: 30),
+                                      onPressed: () =>
+                                          _favoridanKaldir(urun['urunid']),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
@@ -853,7 +1025,7 @@ class _FavorilerSayfasiState extends State<FavorilerSayfasi> {
 }
 
 // ──────────────────────────────────────────────
-// YARDIMCI
+// YARDIMCI — Hilal Çizici
 // ──────────────────────────────────────────────
 
 class CrescentPainter extends CustomPainter {
