@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'components.dart';
 import 'favoriler_sayfasi.dart';
-import 'hesabim.dart';
+import 'hesabim_sayfasi.dart';
 import 'kategoriler_sayfasi.dart';
 
 class UserHomePage extends StatefulWidget {
