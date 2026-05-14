@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login_screen.dart';
-import 'user_home.dart';
-import 'admin_home.dart';
+import 'screens/login_screen.dart';
+import 'screens/user/user_home_page.dart';
+import 'screens/admin/admin_home.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +37,6 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/user': (context) => const UserHomePage(),
-        '/admin': (context) => const AdminHomePage(),
       },
     );
   }
