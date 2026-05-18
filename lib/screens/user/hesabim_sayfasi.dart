@@ -33,20 +33,17 @@ class _HesabimPageState extends State<HesabimPage> {
       if (_emailController.text.trim().isEmpty) {
         throw "E-posta alanı boş bırakılamaz.";
       }
-      await supabase.auth
-          .updateUser(UserAttributes(email: _emailController.text.trim()));
+      await supabase.auth.updateUser(UserAttributes(email: _emailController.text.trim()));
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("E-posta onay bağlantısı gönderildi!")),
+          const SnackBar(content: Text("E-posta onay bağlantısı gönderildi!")),
         );
         _emailController.clear();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Hata: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Hata: $e")));
       }
     }
   }
@@ -57,8 +54,7 @@ class _HesabimPageState extends State<HesabimPage> {
       if (_passwordController.text.length < 6) {
         throw "Şifre en az 6 karakter olmalıdır.";
       }
-      await supabase.auth.updateUser(
-          UserAttributes(password: _passwordController.text.trim()));
+      await supabase.auth.updateUser(UserAttributes(password: _passwordController.text.trim()));
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,8 +64,7 @@ class _HesabimPageState extends State<HesabimPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Hata: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Hata: $e")));
       }
     }
   }
@@ -92,12 +87,7 @@ class _HesabimPageState extends State<HesabimPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // E-posta Güncelleme
-              const Text(
-                "E-posta Güncelle",
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
-              ),
+              const Text("E-posta Güncelle", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
               const SizedBox(height: 8),
               TextField(
                 controller: _emailController,
@@ -105,8 +95,7 @@ class _HesabimPageState extends State<HesabimPage> {
                 decoration: InputDecoration(
                   labelText: "Yeni E-posta",
                   prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -117,19 +106,11 @@ class _HesabimPageState extends State<HesabimPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2E7D32),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-
               const Divider(height: 30),
-
-              // Şifre Güncelleme
-              const Text(
-                "Şifre Güncelle",
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
-              ),
+              const Text("Şifre Güncelle", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
@@ -137,8 +118,7 @@ class _HesabimPageState extends State<HesabimPage> {
                 decoration: InputDecoration(
                   labelText: "Yeni Şifre",
                   prefixIcon: const Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -149,8 +129,7 @@ class _HesabimPageState extends State<HesabimPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2E7D32),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ],
@@ -166,7 +145,6 @@ class _HesabimPageState extends State<HesabimPage> {
     );
   }
 
-  // --- Gizlilik Politikası Diyaloğu ---
   void _gizlilikGoster() {
     showDialog(
       context: context,
@@ -179,52 +157,36 @@ class _HesabimPageState extends State<HesabimPage> {
             Text("Gizlilik Politikası"),
           ],
         ),
-        content: const Text(
-          "Verileriniz Supabase altyapısında güvenle saklanmaktadır. "
-          "Kişisel verileriniz üçüncü taraflarla paylaşılmaz.",
-        ),
+        content: const Text("Verileriniz Supabase altyapısında güvenle saklanmaktadır."),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Kapat"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Kapat")),
         ],
       ),
     );
   }
 
-  // --- Hakkımızda Diyaloğu ---
   void _hakkimizdaGoster() {
     showAboutDialog(
       context: context,
       applicationName: "Helal Gıda Projesi",
       applicationVersion: "1.0.0",
-      applicationIcon:
-          const Icon(Icons.verified_user, color: Colors.green, size: 50),
+      applicationIcon: const Icon(Icons.verified_user, color: Colors.green, size: 50),
       children: const [
-        Padding(
-          padding: EdgeInsets.only(top: 10),
-          child: Text("Selçuk Üniversitesi Teknoloji Fakültesi"),
-        ),
+        Text("Selçuk Üniversitesi Teknoloji Fakültesi"),
         Text("Bilgisayar Mühendisliği Bölümü Projesi"),
       ],
     );
   }
 
-  // --- Menü Kartı Widget ---
-  Widget _profilMenuTile(
-      IconData icon, String title, VoidCallback onTap) {
+  Widget _profilMenuTile(IconData icon, String title, VoidCallback onTap) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ListTile(
         leading: Icon(icon, color: const Color(0xFF2E7D32)),
-        title:
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        trailing:
-            const Icon(Icons.chevron_right, color: Colors.grey),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         onTap: onTap,
       ),
     );
@@ -236,20 +198,28 @@ class _HesabimPageState extends State<HesabimPage> {
       future: widget.profilBilgileri,
       builder: (context, snapshot) {
         String displayName = "Ad Soyad Yüklenemedi";
+        String rol = "Kullanıcı";
 
         if (snapshot.connectionState == ConnectionState.waiting) {
           displayName = "Yükleniyor...";
+          rol = "Yükleniyor...";
         } else if (snapshot.hasData && snapshot.data != null) {
           displayName = snapshot.data!['adsoyad'] ?? "İsimsiz Kullanıcı";
+          
+          // --- ÖNEMLİ: ROL KONTROLÜ BURADA ---
+          final userEmail = Supabase.instance.client.auth.currentUser?.email?.toLowerCase().trim();
+          if (userEmail == "fatma@gmail.com") {
+            rol = "Yönetici";
+          } else {
+            rol = snapshot.data!['rol'] ?? "Kullanıcı";
+          }
         }
 
         return CustomScrollView(
           slivers: [
-            // --- Üst Profil Alanı ---
             SliverToBoxAdapter(
               child: Container(
-                padding:
-                    const EdgeInsets.only(top: 15, bottom: 12),
+                padding: const EdgeInsets.only(top: 15, bottom: 12),
                 margin: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2E7D32),
@@ -266,23 +236,17 @@ class _HesabimPageState extends State<HesabimPage> {
                   children: [
                     const Text(
                       "Hesabım",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 15),
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.white,
-                      child: Icon(Icons.person,
-                          size: 65, color: Colors.green.shade800),
+                      child: Icon(Icons.person, size: 65, color: Colors.green.shade800),
                     ),
                     const SizedBox(height: 15),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 15, horizontal: 40),
+                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -291,15 +255,13 @@ class _HesabimPageState extends State<HesabimPage> {
                         children: [
                           Text(
                             displayName,
-                            style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            "Kullanıcı",
-                            style: TextStyle(
-                                color: Colors.grey, fontSize: 12),
+                          // --- DÜZELTİLEN YER: BURASI ARTIK DİNAMİK ---
+                          Text(
+                            rol,
+                            style: const TextStyle(color: Colors.grey, fontSize: 12),
                           ),
                         ],
                       ),
@@ -308,43 +270,22 @@ class _HesabimPageState extends State<HesabimPage> {
                 ),
               ),
             ),
-
-            // --- Menü Listesi ---
             SliverPadding(
               padding: const EdgeInsets.all(20),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _profilMenuTile(
-                    Icons.manage_accounts_outlined,
-                    "Hesap Ayarları",
-                    _hesapAyarlariniGoster,
-                  ),
-                  _profilMenuTile(
-                    Icons.privacy_tip_outlined,
-                    "Gizlilik Politikası",
-                    _gizlilikGoster,
-                  ),
-                  _profilMenuTile(
-                    Icons.help_center_outlined,
-                    "Hakkımızda",
-                    _hakkimizdaGoster,
-                  ),
-
+                  _profilMenuTile(Icons.manage_accounts_outlined, "Hesap Ayarları", _hesapAyarlariniGoster),
+                  _profilMenuTile(Icons.privacy_tip_outlined, "Gizlilik Politikası", _gizlilikGoster),
+                  _profilMenuTile(Icons.help_center_outlined, "Hakkımızda", _hakkimizdaGoster),
                   const SizedBox(height: 25),
-
-                  // Çıkış Yap Butonu
                   ListTile(
                     onTap: widget.onLogout,
-                    leading:
-                        const Icon(Icons.logout, color: Colors.red),
+                    leading: const Icon(Icons.logout, color: Colors.red),
                     title: const Text(
                       "Güvenli Çıkış",
-                      style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                     ),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     tileColor: Colors.red.withAlpha(26),
                   ),
                 ]),
