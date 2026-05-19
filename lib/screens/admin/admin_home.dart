@@ -124,7 +124,6 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
   List<Map<String, dynamic>> _urunler = [];
   bool _yukleniyor = true;
 
-  // Ürün ekleme/düzenleme için controller'lar
   final _adiController = TextEditingController();
   final _barkodController = TextEditingController();
   final _icerikController = TextEditingController();
@@ -139,6 +138,17 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
     'Unlu Mamuller', 'Yağlar', 'Konserve', 'Tatlılar',
     'Kahvaltılık', 'Bebek Maması', 'Hazır Yemek',
   ];
+
+  // Kategori ismini veri tabanındaki ID karşılığına çeviren fonksiyon
+  int _kategoriIsmindenIdGetir(String kategoriAdi) {
+    return _kategoriler.indexOf(kategoriAdi) + 1;
+  }
+
+  // Veri tabanındaki id değerini dropdown arayüzü için isme çeviren fonksiyon
+  String _kategoriIddenIsimGetir(int? id) {
+    if (id == null || id < 1 || id > _kategoriler.length) return 'Et Ürünleri';
+    return _kategoriler[id - 1];
+  }
 
   @override
   void initState() {
@@ -156,6 +166,7 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
   }
 
   Future<void> _urunleriGetir() async {
+    if (!mounted) return;
     setState(() => _yukleniyor = true);
     try {
       final data = await supabase
@@ -197,18 +208,21 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
             return;
           }
           try {
+            // Sütun isimleri 'kategoriid', 'icerik' ve 'aciklama' olarak eşitlendi
             await supabase.from('urun').insert({
               'urunadi': _adiController.text.trim(),
               'barkod': _barkodController.text.trim(),
               'icerik': _icerikController.text.trim(),
               'aciklama': _aciklamaController.text.trim(),
               'durum': _secilenDurum,
-              'kategori': _secilenKategori,
+              'kategoriid': _kategoriIsmindenIdGetir(_secilenKategori),
             });
+            
             await supabase.from('logs').insert({
               'islem': 'Ürün eklendi: ${_adiController.text.trim()}',
               'kullanici_mail': supabase.auth.currentUser?.email ?? '',
             });
+
             if (mounted) {
               Navigator.pop(context);
               _urunleriGetir();
@@ -219,7 +233,7 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red),
+                SnackBar(content: Text("Ekleme hatası: $e"), backgroundColor: Colors.red),
               );
             }
           }
@@ -235,13 +249,20 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
     _icerikController.text = urun['icerik'] ?? '';
     _aciklamaController.text = urun['aciklama'] ?? '';
     _secilenDurum = urun['durum'] ?? 'Helal';
-    _secilenKategori = urun['kategori'] ?? 'Et Ürünleri';
+    // Veri tabanından gelen int id bilgisini string isme dönüştürüyoruz
+    _secilenKategori = _kategoriIddenIsimGetir(urun['kategoriid']);
 
     showDialog(
       context: context,
       builder: (context) => _urunFormDiyalogu(
         baslik: "Ürünü Düzenle",
         onKaydet: () async {
+          if (_adiController.text.trim().isEmpty || _barkodController.text.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Ürün adı ve barkod alanları boş bırakılamaz!"), backgroundColor: Colors.red),
+            );
+            return;
+          }
           try {
             await supabase.from('urun').update({
               'urunadi': _adiController.text.trim(),
@@ -249,23 +270,25 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
               'icerik': _icerikController.text.trim(),
               'aciklama': _aciklamaController.text.trim(),
               'durum': _secilenDurum,
-              'kategori': _secilenKategori,
+              'kategoriid': _kategoriIsmindenIdGetir(_secilenKategori),
             }).eq('urunid', urun['urunid']);
+
             await supabase.from('logs').insert({
               'islem': 'Ürün düzenlendi: ${_adiController.text.trim()}',
               'kullanici_mail': supabase.auth.currentUser?.email ?? '',
             });
+
             if (mounted) {
               Navigator.pop(context);
               _urunleriGetir();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Ürün güncellendi!"), backgroundColor: Colors.green),
+                const SnackBar(content: Text("Ürün başarıyla güncellendi!"), backgroundColor: Colors.green),
               );
             }
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red),
+                SnackBar(content: Text("Güncelleme hatası: $e"), backgroundColor: Colors.red),
               );
             }
           }
@@ -285,7 +308,7 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("İptal"),
+            child: const Text("İptal", style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
@@ -300,13 +323,13 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
                   Navigator.pop(context);
                   _urunleriGetir();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Ürün silindi!"), backgroundColor: Colors.red),
+                    const SnackBar(content: Text("Ürün başarıyla silindi!"), backgroundColor: Colors.red),
                   );
                 }
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red),
+                    SnackBar(content: Text("Silme hatası: $e"), backgroundColor: Colors.red),
                   );
                 }
               }
@@ -323,19 +346,19 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
     return StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(baslik),
+        title: Text(baslik, style: const TextStyle(fontWeight: FontWeight.bold)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _formAlani(_adiController, "Ürün Adı", Icons.inventory_2_outlined),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               _formAlani(_barkodController, "Barkod", Icons.qr_code),
-              const SizedBox(height: 10),
-              _formAlani(_icerikController, "İçerik", Icons.list_alt, satirSayisi: 2),
-              const SizedBox(height: 10),
-              _formAlani(_aciklamaController, "Açıklama", Icons.description_outlined, satirSayisi: 2),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
+              _formAlani(_icerikController, "İçerik", Icons.list_alt, satirSayisi: 3),
+              const SizedBox(height: 12),
+              _formAlani(_aciklamaController, "Açıklama", Icons.description_outlined, satirSayisi: 3),
+              const SizedBox(height: 12),
               // Durum Seçici
               DropdownButtonFormField<String>(
                 value: _secilenDurum,
@@ -347,7 +370,7 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
                 items: _durumlar.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
                 onChanged: (val) => setDialogState(() => _secilenDurum = val!),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               // Kategori Seçici
               DropdownButtonFormField<String>(
                 value: _secilenKategori,
@@ -389,6 +412,7 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
         labelText: label,
         prefixIcon: Icon(icon),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        alignLabelWithHint: true,
       ),
     );
   }
@@ -428,69 +452,74 @@ class _AdminYonetimSayfasiState extends State<AdminYonetimSayfasi> {
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final urun = _urunler[index];
-                        final durum = urun['durum'] ?? '';
-                        final renk = _durumRengi(durum);
+                    delegate: SliverChildListDelegate(
+                      _urunler.isEmpty
+                          ? [
+                              const SizedBox(height: 50),
+                              const Center(child: Text("Sistemde henüz ürün bulunmuyor.")),
+                            ]
+                          : _urunler.map((urun) {
+                              final durum = urun['durum'] ?? 'Şüpheli';
+                              final renk = _durumRengi(durum);
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 2,
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            leading: Container(
-                              width: 46,
-                              height: 46,
-                              decoration: BoxDecoration(
-                                color: renk.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(Icons.inventory_2, color: renk),
-                            ),
-                            title: Text(
-                              urun['urunadi'] ?? '',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Barkod: ${urun['barkod'] ?? '-'}",
-                                    style: const TextStyle(fontSize: 12)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: renk,
-                                    borderRadius: BorderRadius.circular(8),
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                elevation: 2,
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  leading: Container(
+                                    width: 46,
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      color: renk.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(Icons.inventory_2, color: renk),
                                   ),
-                                  child: Text(
-                                    durum,
-                                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                                  title: Text(
+                                    urun['urunadi'] ?? 'İsimsiz Ürün',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Barkod: ${urun['barkod'] ?? '-'}",
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: renk,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          durum,
+                                          style: const TextStyle(color: Colors.white, fontSize: 11),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit_outlined, color: Color(0xFF2E7D32)),
+                                        onPressed: () => _urunDuzenleDiyalogu(urun),
+                                        tooltip: "Düzenle",
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                        onPressed: () => _urunSil(urun),
+                                        tooltip: "Sil",
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: Color(0xFF2E7D32)),
-                                  onPressed: () => _urunDuzenleDiyalogu(urun),
-                                  tooltip: "Düzenle",
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                  onPressed: () => _urunSil(urun),
-                                  tooltip: "Sil",
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                      childCount: _urunler.length,
+                              );
+                            }).toList(),
                     ),
                   ),
                 ),
